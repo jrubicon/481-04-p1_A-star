@@ -1,4 +1,3 @@
-# 481-04-p1_A-star_
 ## CS481 - 04 Project 1 — A* Search (A-star)
 ### Project Team: (A)lways (I)nebriated
 - Justin Drouin; jdrouin@csu.fullerton.edu
