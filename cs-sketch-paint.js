@@ -79,7 +79,7 @@ function setup( ) // P5 Setup Fcn
     console.log( "p5 End P5 setup =====" );
 }
 
-var g_bot = { dir:3, x:20, y:20, color:100 }; // Dir is 0..7 clock, w 0 up.
+var g_bot = { dir:3, x:1, y:0, color:100 }; // Dir is 0..7 clock, w 0 up.
 
 
 // ==================================================
@@ -88,7 +88,7 @@ var g_bot = { dir:3, x:20, y:20, color:100 }; // Dir is 0..7 clock, w 0 up.
 function get_sprite_by_id( rsprite_id ) // get sprite sheet x,y offsets obj.
 { // ID is a 0-based index; sprites are assumed to be grid cell size.
     // Sprite sheet is 2-elts 1-row, wall=0 and floor=1.
-    let id = rsprite_id % 2;
+    let id = rsprite_id % 3;
     let sprite_ob = { id: id, img: g_img_stuff };
     sprite_ob.sheet_pix_x = id * g_grid.cell_size;
     sprite_ob.sheet_pix_y = 0;
@@ -152,12 +152,10 @@ function draw()  // P5 Frame Re-draw Fcn, Called for Every Frame.
 {
     
     ++g_frame_cnt;
-    if (!g_stop
-        && mouseIsPressed
-        && (0 == g_frame_cnt % g_frame_mod))
+    if (!g_stop && (0 === g_frame_cnt % g_frame_mod))
     {
         //console.log( "p5 draw" );
-        move_bot_to_mouse( );
+        // move_bot_to_mouse( );
         draw_update( );
     }
     // OBE:
@@ -177,24 +175,29 @@ function draw()  // P5 Frame Re-draw Fcn, Called for Every Frame.
 
 function keyPressed( )
 {
-    if ('a' == key) g_sctrl = 0;
-    if ('b' == key) g_sctrl = 1;
-    if ('s' == key) g_stop = ! g_stop;
-    if ('p' == key) {
+    // if ('a' == key) g_sctrl = 0;
+    // if ('b' == key) g_sctrl = 1;
+    if ('s' === key) g_stop = ! g_stop;
+    if ('p' === key) {
         console.log( "p5 list_fn" );
         g_l4job.list_fn( );
     }
-    if ('z' == key) {
-        console.log( "p5 Call g_l4job.zzdefg_fn" );
-        g_l4job.zzdefg_fn( );
-    }
+    // if ('z' == key) {
+    //     console.log( "p5 Call g_l4job.zzdefg_fn" );
+    //     g_l4job.zzdefg_fn( );
+    // }
 
-    console.log( "p5 keyPressed: "
-                 // + ${key} + " " + ${keyCode} 
-                 + key + " " + keyCode 
-                 +  " g_sctrl = " + g_sctrl );
+    console.log( `p5 keyPressed: ${key} ${keyCode}`);
 
     console.log( "p5 keyPressed: post g_stop = " + g_stop );
-    console.log( "p5 mouseIsPressed = " + mouseIsPressed );
-    if (g_stop) { noLoop(); } else {loop();}
+    // console.log( "p5 mouseIsPressed = " + mouseIsPressed );
+
+    if (g_stop)
+    {
+        noLoop();
+    }
+    else
+    {
+        loop();
+    }
 }

@@ -330,15 +330,16 @@
                 ))
        (fny (lambda ( )
               (jp-list-tile-cells)))
-       (fnz (lambda ( )
-              (jp-zzdefg))))
+       ;;(fnz (lambda ( )
+              ;;(jp-zzdefg)))
+       )
   (set l4j "draw_fn" (export fnx)) ;; Here, we install the JP fn on a JS obj.
   (logr (list "g_l4job.draw_fn is set"))
   (logr (list "g_l4job.draw_fn() = " (js "g_l4job.draw_fn")))
   (set l4j "list_fn" (export fny))
   (logr (list "g_l4job.list_fn is set"))
-  (set l4j "zzdefg_fn" (export fnz))
-  (logr (list "g_l4job.zzdefg_fn is set"))
+  ;;(set l4j "zzdefg_fn" (export fnz))
+  ;;(logr (list "g_l4job.zzdefg_fn is set"))
 )
 
 ;; ==================================================
