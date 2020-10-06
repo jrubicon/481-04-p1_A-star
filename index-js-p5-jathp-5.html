@@ -31,6 +31,7 @@
           Anthony Lam; Anthonylam2445@csu.fullerton.edu</br>
           Michael Burdi; maburdi@csu.fullerton.edu</br>
         </p>
+        <button style='margin-bottom:30px' onclick='startbutton()'>Click To Start</button> Or Press "S" To Begin.
       <div>
   </body>    <!-- HTML display page ends here -->
 
@@ -263,7 +264,8 @@
          (botx (js "g_bot.x"))
          (boty (js "g_bot.y")))
     ;;(logr (stgr (list "draw sctrl,pix x,y =" sctrl pix xx yy )))
-    (js (concat "draw_sprite_in_cell(" 2 "," botx "," boty ")"))))
+    (js (concat "draw_sprite_in_cell(" 2 "," botx "," boty ")"))
+    (js (concat "draw_sprite_in_cell(" 0 "," 35 "," 26 ")"))))
 
 ;;    (if (= 0 sctrl)
 ;;        (let ( )

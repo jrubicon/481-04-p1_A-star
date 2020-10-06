@@ -25,6 +25,9 @@ var g_tiles;
 
 var g_l4job = { id:1 }; // Put Lisp stuff f JS-to-access in ob; id to force ob.
 
+function startbutton(){
+  g_stop = ! g_stop;
+}
 function do_btn( )
 { // grab code from csu\assets\js\js+p5+editbox
 
@@ -49,9 +52,9 @@ function save_image( ) // btn
 
   //Also g_img_cell = loadImage( '10x10-sqr-RBY.png' );
 let g_img_stuff;
-  
+
 function get_images( )
-{ 
+{
     g_img_stuff = new Image( );
     g_img_stuff.src = "sprite-cells-28x28-a.png";
 }
@@ -150,7 +153,7 @@ function move_bot_to_mouse( )
 
 function draw()  // P5 Frame Re-draw Fcn, Called for Every Frame.
 {
-    
+
     ++g_frame_cnt;
     if (!g_stop && (0 === g_frame_cnt % g_frame_mod))
     {
