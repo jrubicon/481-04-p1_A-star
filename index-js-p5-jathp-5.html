@@ -493,38 +493,52 @@
 
     (defun get-neighbors ()
         (let* ((x (js "g_bot.x"))
-              (y (js "g_bot.y"))
-              (grid_w (js "g_grid.wid"))
-              (grid_h (js "g_grid.hgt"))
-              (dx (- 1))
-              (neighbors '()))
+               (y (js "g_bot.y"))
+               (grid_w (js "g_grid.wid"))
+               (grid_h (js "g_grid.hgt"))
+               (neighbors '()))
+
+            (setq dx (- 1))
             (while (<= dx 1)
+
                 (setq dy (- 1))
                 (while (<= dy 1)
-                    (logr (concat "x,y = (" (+ x dx) ", " (+ y dy) ")"))
-                    (if (and (>= (+ x dx) 0) (< (+ x dx) grid_w)      ;; 0 <= x < width
-                             (>= (+ y dy) 0) (< (+ y dy) grid_h)
-                             (not (and (= dx 0) (= dy 0)))
-                             (= (get-tile-type (+ x dx) (+ y dy)) 'floor))     ;; 0 <= y < height
-                        (setq neighbors (append (list (list (+ x dx) (+ y dy))) neighbors) )
+
+                    (if (and (>= (+ x dx) 0) (< (+ x dx) grid_w)            ;; 0 <= x < width
+                             (>= (+ y dy) 0) (< (+ y dy) grid_h)            ;; 0 <= y < height
+                             (not (and (= dx 0) (= dy 0)))                  ;; skip current location
+                             (= (get-tile-type (+ x dx) (+ y dy)) 'floor))  ;; only get floor tiles
+                        (setq neighbors (cons (list (+ x dx) (+ y dy)) neighbors) )
                         nil)
+
                     (setq dy (+ dy 1))
                 )
+
                 (setq dx (+ dx 1))
             )
+
             neighbors   ;; return neighbors
         )
     )
 
-    ;;(defun move ()
-        ;;(if (null open) ;; If open list is empty
+    (defun move ()
+
+        (if (null open) ;; If open list is empty
+
             ;; Add neighbors to open list
-            ;;(append open (get-neighbors))
+            (let ()
+                (setq open (append (get-neighbors) open))
+                (logr (list "Possible moves: " open)))
+
             ;; Open list not empty
-            ;;()))
+            (let ()
+                )
+        )
+    )
 
     (logr (concat "Tile type at 2,0 = " (get-tile-type 2 0)))
-    (logr (list "Get neighbors = " (get-neighbors)))
+    (move)
+    ;;(logr (list "Get neighbors = " (get-neighbors)))
 
     (defun set-f (val x y)   ;; <value of f> <x-coord (grid) of tile> <y-coord (grid) of tile>
         (let* ((sz (js "g_grid.cell_size"))

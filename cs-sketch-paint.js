@@ -167,7 +167,7 @@ function draw()  // P5 Frame Re-draw Fcn, Called for Every Frame.
     ++g_frame_cnt;
     if (!g_stop && (0 === g_frame_cnt % g_frame_mod))
     {
-        //console.log( "p5 draw" );
+        // console.log( "p5 draw" );
 
         // if (g_bot.at({x: g_goal.x, y: g_goal.y})) {
         //
