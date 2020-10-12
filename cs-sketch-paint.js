@@ -82,7 +82,16 @@ function setup( ) // P5 Setup Fcn
     console.log( "p5 End P5 setup =====" );
 }
 
-var g_bot = { dir:3, x:1, y:0, color:100 }; // Dir is 0..7 clock, w 0 up.
+var g_bot = {
+    dir:3,
+    x:1, y:0,
+    color:100,
+    at({x, y}) { return this.x === x && this.y === y }
+}; // Dir is 0..7 clock, w 0 up.
+
+var g_goal = {
+    x: 35, y: 26
+};
 
 
 // ==================================================
@@ -151,6 +160,7 @@ function move_bot_to_mouse( )
     g_bot.y %= g_grid.hgt;
 }
 
+
 function draw()  // P5 Frame Re-draw Fcn, Called for Every Frame.
 {
 
@@ -158,6 +168,12 @@ function draw()  // P5 Frame Re-draw Fcn, Called for Every Frame.
     if (!g_stop && (0 === g_frame_cnt % g_frame_mod))
     {
         //console.log( "p5 draw" );
+
+        // if (g_bot.at({x: g_goal.x, y: g_goal.y})) {
+        //
+        // }
+        // g_l4job.set_f("25", 6, 6)
+
         // move_bot_to_mouse( );
         draw_update( );
     }

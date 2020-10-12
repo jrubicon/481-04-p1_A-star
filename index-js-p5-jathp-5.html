@@ -32,7 +32,7 @@
           Michael Burdi; maburdi@csu.fullerton.edu</br>
         </p>
         <button style='margin-bottom:30px' onclick='startbutton()'>Click To Start</button> Or Press "S" To Begin.
-      <div>
+    </div>
   </body>    <!-- HTML display page ends here -->
 
 <script src="assets/draw-stuff.js"></script> <!-- Load some JS fcns in a file -->
@@ -232,6 +232,20 @@
 (defun jp-circle (rx ry rdia) ;; x,y = center pos, P5.
   (js (concat "circle(" rx "," ry "," rdia ")" )))
 
+;; ================================================== jp-text ====
+(defun jp-text (text x y)
+    (let ()
+      (logr (concat "text( '" text "' , " px ", " py ")"))
+      (js "textSize(16)")
+      (js "strokeWeight(0)")
+      (js "textStyle(NORMAL)")
+      (js "fill('white')")
+      (js (concat "text(" text "," px "," py ")" )))
+)
+
+
+
+
 ;; ================================================== jp-cell-rbg-sum ====
 (defun jp-pix-rbg-sum ( rx ry ) ;; rcx,rcy is upper-left cell corner pos.
 (let* ((za (logr (list "pix-rbg-sum: rx,ry = " rx ry)))
@@ -263,9 +277,8 @@
          (sz (js "g_grid.cell_size"))
          (botx (js "g_bot.x"))
          (boty (js "g_bot.y")))
-    ;;(logr (stgr (list "draw sctrl,pix x,y =" sctrl pix xx yy )))
-    (js (concat "draw_sprite_in_cell(" 2 "," botx "," boty ")"))))
-;;    (js (concat "draw_sprite_in_cell(" 0 "," 35 "," 26 ")"))))
+    (js (concat "draw_sprite_in_cell(" 2 "," botx "," boty ")")))
+)
 
 ;;    (if (= 0 sctrl)
 ;;        (let ( )
@@ -284,6 +297,14 @@
 ;;        (set-black (list botx boty))
 ;;        (jp-rect xx yy zin zin)) )
 ;;    (logr (list "red-tiles =" red-tiles))))
+
+
+(defun jp-draw-goal ( )
+  (let* ((sz (js "g_grid.cell_size"))
+         (goalx (js "g_goal.x"))
+         (goaly (js "g_goal.y")))
+    (js (concat "draw_sprite_in_cell(" 0 "," goalx "," goaly ")")))
+)
 
 ;; ================================================== jp-get-tile-color ====
 (defun jp-get-tile-color (rx ry)
@@ -319,7 +340,6 @@
     ))
 
 
-
 ;; ================================================== Setup l4j.draw_fn ====
 ;; Build & Setup l4j.draw_fn(): a JP lisp fn callable from JS.
 ;; NB, a JS global var isn't same as a JP global var.
@@ -328,20 +348,21 @@
 (let* ((l4j (js "g_l4job"))
        (fnx (lambda ( ) ;; Here's the JP lisp fn being built.
               (let ()
-                  (jp-draw-bot))
+                  (jp-draw-bot)
+                  (jp-draw-goal))
                 ))
        (fny (lambda ( )
               (jp-list-tile-cells)))
-       ;;(fnz (lambda ( )
-              ;;(jp-zzdefg)))
+       (fnz (lambda (text x y)
+              (set-f text x y)))
        )
   (set l4j "draw_fn" (export fnx)) ;; Here, we install the JP fn on a JS obj.
   (logr (list "g_l4job.draw_fn is set"))
   (logr (list "g_l4job.draw_fn() = " (js "g_l4job.draw_fn")))
   (set l4j "list_fn" (export fny))
   (logr (list "g_l4job.list_fn is set"))
-  ;;(set l4j "zzdefg_fn" (export fnz))
-  ;;(logr (list "g_l4job.zzdefg_fn is set"))
+  (set l4j "set_f" (export fnz))
+  (logr (list "g_l4job.set_f is set"))
 )
 
 ;; ==================================================
@@ -428,6 +449,98 @@
 (jp-draw-maze maze1-row-runs) ;; Draw the maze on the grid.
 
 (logr "End html lisp draw fn ==========")
+
+</script>
+
+
+<script type="text/lisp">
+
+    ;; These are the candidates for the robot to move to next.
+    ;; If the robot finds a better move along a different route,
+    ;; he will back up, traveling on the closed tiles to get to the parent tile
+    ;; of the move that is better.
+    (def open '())
+
+    ;; These are the tiles that robot has already visited.
+    ;; Therefore, he can only travel on these tiles when exploring,
+    ;; except for the first move.
+    (def closed '())
+
+    (defun get-tile-type ( x y )
+        (let* ((rows maze1-row-runs)
+               (row nil))
+
+            (setq j 0)
+            (while (<= j y)
+                (setq row (car rows))
+                (setq rows (cdr rows))
+                (setq j (+ j 1)))
+
+            (setq type (car row))
+
+            (setq row (cdr row))
+
+            (setq i (car row))
+            (while (<= i x)
+                (setq type (if (= type 'floor) 'wall 'floor))
+                (setq row (cdr row))
+                (setq i (+ i (car row))))
+
+            type
+        )
+    )
+
+
+    (defun get-neighbors ()
+        (let* ((x (js "g_bot.x"))
+              (y (js "g_bot.y"))
+              (grid_w (js "g_grid.wid"))
+              (grid_h (js "g_grid.hgt"))
+              (dx (- 1))
+              (neighbors '()))
+            (while (<= dx 1)
+                (setq dy (- 1))
+                (while (<= dy 1)
+                    (logr (concat "x,y = (" (+ x dx) ", " (+ y dy) ")"))
+                    (if (and (>= (+ x dx) 0) (< (+ x dx) grid_w)      ;; 0 <= x < width
+                             (>= (+ y dy) 0) (< (+ y dy) grid_h)
+                             (not (and (= dx 0) (= dy 0)))
+                             (= (get-tile-type (+ x dx) (+ y dy)) 'floor))     ;; 0 <= y < height
+                        (setq neighbors (append (list (list (+ x dx) (+ y dy))) neighbors) )
+                        nil)
+                    (setq dy (+ dy 1))
+                )
+                (setq dx (+ dx 1))
+            )
+            neighbors   ;; return neighbors
+        )
+    )
+
+    ;;(defun move ()
+        ;;(if (null open) ;; If open list is empty
+            ;; Add neighbors to open list
+            ;;(append open (get-neighbors))
+            ;; Open list not empty
+            ;;()))
+
+    (logr (concat "Tile type at 2,0 = " (get-tile-type 2 0)))
+    (logr (list "Get neighbors = " (get-neighbors)))
+
+    (defun set-f (val x y)   ;; <value of f> <x-coord (grid) of tile> <y-coord (grid) of tile>
+        (let* ((sz (js "g_grid.cell_size"))
+            (d (/ sz 2))
+            (px (+ (* sz (- x 1)) 4))        ;; shift right 4 px
+            (py (+ (* sz (- y 1)) 16 4)))    ;; shift down 4 px and 16 font size in pixels
+        (logr (concat "sz,d,px,py = " sz d px py))
+        (jp-text val px py)))
+
+    (defun set-g (val x y)   ;; <value of g> <x-coord (grid) of tile> <y-coord (grid) of tile>
+        (let* ((sz (js "g_grid.cell_size"))
+            (d (/ sz 2))
+            (px (+ (* sz (- x 1)) 4))        ;; shift right 4 px
+            (py (+ (* sz (- y 1)) 16 4)))    ;; shift down 4 px and 16 font size in pixels
+        (jp-text val px py)))
+
 
 </script>
 
