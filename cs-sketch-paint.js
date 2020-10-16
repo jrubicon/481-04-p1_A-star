@@ -65,7 +65,7 @@ function setup( ) // P5 Setup Fcn
     console.log( "p5 @: log says hello from P5 setup()." );
     g_grid = { cell_size:28, wid:36, hgt:28 };
     g_frame_cnt = 0; // Setup a P5 display-frame counter, to do anim
-    g_frame_mod = 6; // Update ever 'mod' frames.
+    g_frame_mod = 60; // Update ever 'mod' frames.
     g_stop = 1; // Go by default.
     g_sctrl = 0;
     g_l4job = { id:1 };
@@ -174,8 +174,11 @@ function draw()  // P5 Frame Re-draw Fcn, Called for Every Frame.
         // }
         // g_l4job.set_f("25", 6, 6)
 
+        if (!g_bot.at(4, 1)) {
+            g_bot.move();
+        }
         // move_bot_to_mouse( );
-        draw_update( );
+        // draw_update( );
     }
     // OBE:
     // Use JS Canvas's draw fcn, instead of P5's image(), to avoid CORS error.

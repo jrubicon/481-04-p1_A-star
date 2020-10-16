@@ -250,7 +250,11 @@
       (js (concat "text(" text "," px "," py ")" )))
 )
 
-
+(defun jp-clear (x y)
+    (let* ((sz (js "g_grid.cell_size")))
+        (js "stroke('white')")
+        (js "fill('black')")
+        (jp-rect (* x sz) (* y sz) sz sz)))
 
 
 ;; ================================================== jp-cell-rbg-sum ====
@@ -360,10 +364,7 @@
                   )
                 ))
        (fny (lambda ( )
-              (jp-list-tile-cells)))
-       (fnz (lambda (text x y)
-              (set-f text x y)))
-       )
+              (jp-list-tile-cells))))
   (set l4j "draw_fn" (export fnx)) ;; Here, we install the JP fn on a JS obj.
   (logr (list "g_l4job.draw_fn is set"))
   (logr (list "g_l4job.draw_fn() = " (js "g_l4job.draw_fn")))
@@ -565,30 +566,60 @@
         )
     )
 
+    (defun goto (x y)
+        (let* ((botx (js "g_bot.x"))
+               (boty (js "g_bot.y"))
+               (g_bot (js "g_bot"))
+               (tile-type (get-tile-type botx boty)))
 
-    (defun move ()
-        (let* ()
+            ;; Move robot
+            (set g_bot "x" x)
+            (set g_bot "y" y)
 
-            (if (null open)
-                (let ()
+            ;; Draw bot
+            (jp-draw-bot)
 
-                    ;; Get all neighbors from current bot position
-                    (def open (append open (get-neighbors)))
-
-                    (logr (list "Get neighbors: " open))
-
-                    (setq candidates (map (lambda (node) (list (Hn node) node) ) open ))
-
-                    (logr (list "Test: " (find tail '((2 0)) candidates)))
-
-                    (logr (list "Mapped: " candidates))
-
-
-                )
-                nil     ;; no false condition
-            )
+            ;; Re-draw previous cell
+            (cond ((eq tile-type 'floor)
+                    (js (concat "draw_sprite_in_cell(" 1 "," botx "," boty ")")))
+                  ((eq tile-type 'wall)
+                    (jp-clear botx boty)))
         )
     )
+
+    (def moves '((2 0) (3 0) (4 0) (4 1)))
+
+    (defun move ()
+        (if (null moves)
+            nil
+            (let* ((x (abs (caar moves))) (y (abs (cdar moves))))
+                (logr (concat "Move to " x "," y))
+                (goto x y)
+                (def moves (cdr moves)))
+        )
+
+        ;;(if (null open)
+            ;;(let ()
+
+                ;; Get all neighbors from current bot position
+                ;;(def open (append open (get-neighbors)))
+
+                ;;(logr (list "Get neighbors: " open))
+
+                ;;(setq candidates (map (lambda (node) (list (Hn node) node) ) open ))
+
+                ;;(logr (list "Test: " (find tail '((2 0)) candidates)))
+
+                ;;(logr (list "Mapped: " candidates))
+
+
+
+            ;;)
+            ;;nil     ;; no false condition
+        ;;)
+    )
+
+
 
     (defun text-in-cell (val x y)   ;; <value of f> <x-coord (grid) of tile> <y-coord (grid) of tile>
         (let* ((sz (js "g_grid.cell_size"))
@@ -600,10 +631,14 @@
 
 
 
+    (let* ((g_bot (js "g_bot")))
+        (set g_bot "move" (export move))
+    )
 
-    (move)
 
-    (text-in-cell "25" 3 5)
+    ;; (move)
+
+    ;;(text-in-cell "25" 3 5)
 
 
 
