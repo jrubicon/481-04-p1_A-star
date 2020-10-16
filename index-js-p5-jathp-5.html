@@ -79,6 +79,13 @@
     (cons (F (head L))
           (map F (tail L)))))
 
+(defun find (F V L)
+    (if (null L)
+            Nil
+        (if (equal (F (car L)) V)
+                (car L)
+            (find F V (cdr L)))))
+
 
 ; CADDRs
 
@@ -348,8 +355,9 @@
 (let* ((l4j (js "g_l4job"))
        (fnx (lambda ( ) ;; Here's the JP lisp fn being built.
               (let ()
-                  (jp-draw-bot)
-                  (jp-draw-goal))
+                  ;;(jp-draw-bot)
+                  ;;(jp-draw-goal))
+                  )
                 ))
        (fny (lambda ( )
               (jp-list-tile-cells)))
@@ -445,8 +453,12 @@
 ;; tests
 ;;(jp-draw-maze-row-run 0 0 '(wall 1 3 5 10 6 7))
 
+
 ;; ================================================== Call jp-draw-maze ====
 (jp-draw-maze maze1-row-runs) ;; Draw the maze on the grid.
+
+(jp-draw-bot)
+(jp-draw-goal)
 
 (logr "End html lisp draw fn ==========")
 
@@ -465,6 +477,9 @@
     ;; Therefore, he can only travel on these tiles when exploring,
     ;; except for the first move.
     (def closed '())
+
+    ;; Best path / Current path
+    (def path `())
 
     (defun get-tile-type ( x y )
         (let* ((rows maze1-row-runs)
@@ -521,39 +536,75 @@
         )
     )
 
-    (defun move ()
 
-        (if (null open) ;; If open list is empty
+    ;; Distance from to this node along the current path.
+    ;; In other words, how far away is this node from where the robot started its best path.
+    ;; Taxi-cab geometry is not Euclidean
+    ;; Distance between gx,gy and x,y is just (gx - x) + (gy - y)
+    (defun Fn (node)
+        (+ (abs (length path)) 1)      ;; return the length of the current path + 1
+    )
 
-            ;; Add neighbors to open list
-            (let ()
-                (setq open (append (get-neighbors) open))
-                (logr (list "Possible moves: " open)))
-
-            ;; Open list not empty
-            (let ()
-                )
+    ;; Distance from node to goal
+    ;; Taxi-cab geometry is not Euclidean
+    ;; Distance between gx,gy and x,y is just (gx - x) + (gy - y)
+    (defun Gn (node)
+        (let* ((gx (js "g_goal.x")) (gy (js "g_goal.y"))
+                (x (abs (car node))) (y (abs (cdr node))))
+           (+ (- gx x) (- gy y))
         )
     )
 
-    (logr (concat "Tile type at 2,0 = " (get-tile-type 2 0)))
-    (move)
-    ;;(logr (list "Get neighbors = " (get-neighbors)))
+    ;; H (n) = G (n) + F (n)
+    (defun Hn (node)
+        (let ()
+            (logr (concat "Node -> " node))
+            (logr (concat "Fn = " (Fn node)))
+            (logr (concat "Gn = " (Gn node)))
+            (+ (Fn node) (Gn node))
+        )
+    )
 
-    (defun set-f (val x y)   ;; <value of f> <x-coord (grid) of tile> <y-coord (grid) of tile>
+
+    (defun move ()
+        (let* ()
+
+            (if (null open)
+                (let ()
+
+                    ;; Get all neighbors from current bot position
+                    (def open (append open (get-neighbors)))
+
+                    (logr (list "Get neighbors: " open))
+
+                    (setq candidates (map (lambda (node) (list (Hn node) node) ) open ))
+
+                    (logr (list "Test: " (find tail '((2 0)) candidates)))
+
+                    (logr (list "Mapped: " candidates))
+
+
+                )
+                nil     ;; no false condition
+            )
+        )
+    )
+
+    (defun text-in-cell (val x y)   ;; <value of f> <x-coord (grid) of tile> <y-coord (grid) of tile>
         (let* ((sz (js "g_grid.cell_size"))
             (d (/ sz 2))
-            (px (+ (* sz (- x 1)) 4))        ;; shift right 4 px
-            (py (+ (* sz (- y 1)) 16 4)))    ;; shift down 4 px and 16 font size in pixels
+            (px (+ (* sz x) 4))        ;; shift right 4 px
+            (py (+ (* sz y) 16 4)))    ;; shift down 4 px and 16 font size in pixels
         (logr (concat "sz,d,px,py = " sz d px py))
         (jp-text val px py)))
 
-    (defun set-g (val x y)   ;; <value of g> <x-coord (grid) of tile> <y-coord (grid) of tile>
-        (let* ((sz (js "g_grid.cell_size"))
-            (d (/ sz 2))
-            (px (+ (* sz (- x 1)) 4))        ;; shift right 4 px
-            (py (+ (* sz (- y 1)) 16 4)))    ;; shift down 4 px and 16 font size in pixels
-        (jp-text val px py)))
+
+
+
+    (move)
+
+    (text-in-cell "25" 3 5)
+
 
 
 </script>
