@@ -163,36 +163,13 @@ function move_bot_to_mouse( )
 
 function draw()  // P5 Frame Re-draw Fcn, Called for Every Frame.
 {
-
     ++g_frame_cnt;
     if (!g_stop && (0 === g_frame_cnt % g_frame_mod))
     {
-        // console.log( "p5 draw" );
-
-        // if (g_bot.at({x: g_goal.x, y: g_goal.y})) {
-        //
-        // }
-        // g_l4job.set_f("25", 6, 6)
-
-        if (!g_bot.at(4, 1)) {
+        if (!g_bot.at(g_goal)) {
             g_bot.move();
         }
-        // move_bot_to_mouse( );
-        // draw_update( );
     }
-    // OBE:
-    // Use JS Canvas's draw fcn, instead of P5's image(), to avoid CORS error.
-    // API: drawImage( image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight )
-    //  s = source (the image), d = dest (the canvase)
-    //
-    //  console.log( "beg: sprite test" );
-    //  let ctx = g_p5_cnv.canvas.getContext('2d');
-    //  ctx.drawImage( g_img_stuff, 0, 0, 28, 28, 120, 40, 28, 28 );
-    //  draw_sprite_in_cell( 0, 0, 0 );
-    //  console.log( "end: sprite test" );
-    //
-    // Works
-
 }
 
 function keyPressed( )

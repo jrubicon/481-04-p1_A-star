@@ -590,13 +590,46 @@
     (def moves '((2 0) (3 0) (4 0) (4 1)))
 
     (defun move ()
-        (if (null moves)
-            nil
-            (let* ((x (abs (caar moves))) (y (abs (cdar moves))))
+        (if (null open)     ;; list is empty
+            (let* ((neighbors (get-neighbors)))
+
+                (def open (append open neighbors))
+
+                (logr (list "Open -> " open))
+
+                ;; Loop over all neighbors.
+                ;; If already visited, check if Heuristic is better. If better update Heuristic.
+                ;; Insert into open list keeping the lowest cost nodes first.
+                (while neighbors
+                    (let* ((n (car neighbors))
+                           (found (find tail n closed)))
+                        (logr (list "Check Neighbor " n))
+
+                        (text-in-cell (Hn n) (car n) (cdr n))
+
+                        (if found
+                            ;; Found. Update Hn
+                            (logr (concat "Found " found))
+                            ;; Not found. insert
+                            ;;(insert n open)
+                            (logr (concat "Not Found " found))
+                        )
+
+
+                    )
+                    (setq neighbors (cdr neighbors))
+                )
+
+            )
+           (let* ((x (abs (caar open))) (y (abs (cdar open))))
+                (logr (list "Moves" open))
                 (logr (concat "Move to " x "," y))
                 (goto x y)
-                (def moves (cdr moves)))
+                (def open (cdr open))
+                (def closed (append closed (cons x y)))
+            )
         )
+    )
 
         ;;(if (null open)
             ;;(let ()
@@ -617,29 +650,20 @@
             ;;)
             ;;nil     ;; no false condition
         ;;)
-    )
 
 
 
-    (defun text-in-cell (val x y)   ;; <value of f> <x-coord (grid) of tile> <y-coord (grid) of tile>
+    (defun text-in-cell (text x y)
         (let* ((sz (js "g_grid.cell_size"))
             (d (/ sz 2))
             (px (+ (* sz x) 4))        ;; shift right 4 px
             (py (+ (* sz y) 16 4)))    ;; shift down 4 px and 16 font size in pixels
-        (logr (concat "sz,d,px,py = " sz d px py))
-        (jp-text val px py)))
+        (jp-text text px py)))
 
 
-
+    ;; Attach the move function to the robot object
     (let* ((g_bot (js "g_bot")))
-        (set g_bot "move" (export move))
-    )
-
-
-    ;; (move)
-
-    ;;(text-in-cell "25" 3 5)
-
+        (set g_bot "move" (export move)))
 
 
 </script>
