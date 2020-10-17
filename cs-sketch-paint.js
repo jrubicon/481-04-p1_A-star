@@ -25,6 +25,11 @@ var g_tiles;
 
 var g_l4job = { id:1 }; // Put Lisp stuff f JS-to-access in ob; id to force ob.
 
+
+function change_frame_rate(el) {
+    el.previousSibling.previousSibling.textContent = el.value;
+    g_frame_mod = el.value; // event.target.value;
+}
 function startbutton(){
   g_stop = ! g_stop;
 }

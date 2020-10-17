@@ -33,6 +33,12 @@
         </p>
         <button style='margin-bottom:30px' onclick='startbutton()'>Click To Start</button> Or Press "S" To Begin.
     </div>
+
+
+    <div style="position: absolute; left: 10px; top: 300px;">
+        <label for="frame_rate">Frame Mod</label>&emsp;<span></span>
+        <br><input type="range" id="frame_rate" name="frame_rate" min="10" max="100" step="10" onchange="change_frame_rate(this)">
+    </div>
   </body>    <!-- HTML display page ends here -->
 
 <script src="assets/draw-stuff.js"></script> <!-- Load some JS fcns in a file -->
@@ -523,6 +529,7 @@
                     (if (and (>= (+ x dx) 0) (< (+ x dx) grid_w)            ;; 0 <= x < width
                              (>= (+ y dy) 0) (< (+ y dy) grid_h)            ;; 0 <= y < height
                              (not (and (= dx 0) (= dy 0)))                  ;; skip current location
+                             (not (and (!= dx 0) (!= dy 0)))
                              (= (get-tile-type (+ x dx) (+ y dy)) 'floor))  ;; only get floor tiles
                         (setq neighbors (cons (list (+ x dx) (+ y dy)) neighbors) )
                         nil)
@@ -557,14 +564,7 @@
     )
 
     ;; H (n) = G (n) + F (n)
-    (defun Hn (node)
-        (let ()
-            (logr (concat "Node -> " node))
-            (logr (concat "Fn = " (Fn node)))
-            (logr (concat "Gn = " (Gn node)))
-            (+ (Fn node) (Gn node))
-        )
-    )
+    (defun Hn (node) (+ (Fn node) (Gn node)))
 
     (defun goto (x y)
         (let* ((botx (js "g_bot.x"))
@@ -584,74 +584,57 @@
                     (js (concat "draw_sprite_in_cell(" 1 "," botx "," boty ")")))
                   ((eq tile-type 'wall)
                     (jp-clear botx boty)))
+
+            (logr (list "Closed " closed))
+            (logr (list "Found " (cons botx (cons boty nil))))
+            (if (member (cons botx (cons boty nil)) closed)
+                (let ((sz (js "g_grid.cell_size")))
+                    (js "fill(0,210,255,180)")
+                    (jp-rect (* botx sz) (* boty sz) sz sz)
+                )
+                nil
+            )
         )
     )
-
-    (def moves '((2 0) (3 0) (4 0) (4 1)))
 
     (defun move ()
-        (if (null open)     ;; list is empty
-            (let* ((neighbors (get-neighbors)))
+        (let* ()
 
-                (def open (append open neighbors))
-
-                (logr (list "Open -> " open))
-
-                ;; Loop over all neighbors.
-                ;; If already visited, check if Heuristic is better. If better update Heuristic.
-                ;; Insert into open list keeping the lowest cost nodes first.
-                (while neighbors
-                    (let* ((n (car neighbors))
-                           (found (find tail n closed)))
-                        (logr (list "Check Neighbor " n))
-
-                        (text-in-cell (Hn n) (car n) (cdr n))
-
-                        (if found
-                            ;; Found. Update Hn
-                            (logr (concat "Found " found))
-                            ;; Not found. insert
-                            ;;(insert n open)
-                            (logr (concat "Not Found " found))
-                        )
-
-
-                    )
-                    (setq neighbors (cdr neighbors))
+            ;; 1. If open, move to open with lowest H(n)
+            (logr (list "Open " open))
+            (if open
+                (let* ((x (abs (caadar open))) (y (abs (cdadar open))))
+                    (logr (concat "Move to " x "," y))
+                    (goto x y)
+                    (def open (cdr open))
+                    (def closed (append closed (cons (cons x (cons y nil)) nil) ))
                 )
+                Nil
+            )
 
+            ;; 2. Get new neighbors, add to open, draw H(n) values in neighbors
+            (setq neighbors (get-neighbors))
+            (while neighbors
+                (let* ((n (car neighbors))
+                       (found (find tail n closed))
+                       (H (Hn n)))
+
+                    (text-in-cell H (car n) (cdr n))
+
+                    (if found
+                        ;; Found. Update Hn
+                        (logr (concat "Visited " found))
+                        ;; Not found. insert
+                        (def open (append open (cons (cons H (cons n nil)) nil) ))
+                    )
+
+                )
+                (setq neighbors (cdr neighbors))
             )
-           (let* ((x (abs (caar open))) (y (abs (cdar open))))
-                (logr (list "Moves" open))
-                (logr (concat "Move to " x "," y))
-                (goto x y)
-                (def open (cdr open))
-                (def closed (append closed (cons x y)))
-            )
+
         )
+
     )
-
-        ;;(if (null open)
-            ;;(let ()
-
-                ;; Get all neighbors from current bot position
-                ;;(def open (append open (get-neighbors)))
-
-                ;;(logr (list "Get neighbors: " open))
-
-                ;;(setq candidates (map (lambda (node) (list (Hn node) node) ) open ))
-
-                ;;(logr (list "Test: " (find tail '((2 0)) candidates)))
-
-                ;;(logr (list "Mapped: " candidates))
-
-
-
-            ;;)
-            ;;nil     ;; no false condition
-        ;;)
-
-
 
     (defun text-in-cell (text x y)
         (let* ((sz (js "g_grid.cell_size"))
@@ -665,6 +648,9 @@
     (let* ((g_bot (js "g_bot")))
         (set g_bot "move" (export move)))
 
+
+    ;; Keep this for later. Cool trick to map a function using a lambda
+    ;; (setq candidates (map (lambda (node) (list (Hn node) node) ) open ))
 
 </script>
 
