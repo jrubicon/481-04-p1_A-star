@@ -86,11 +86,13 @@
           (map F (tail L)))))
 
 (defun find (F V L)
-    (if (null L)
-            Nil
-        (if (equal (F (car L)) V)
-                (car L)
-            (find F V (cdr L)))))
+    (if L
+        (if (equal (F (head L)) V)
+            (head L)
+          (find F V (tail L)))
+        nil
+    )
+)
 
 
 ; CADDRs
@@ -212,10 +214,8 @@
 
 (defun logr (rx) ;; Shorter way to 'console.log in JS'.
   (let ((log (method console "log")))
-    (log (concat "lp: "(stgr rx))))) ;; Nicer to strigify the lisp expr first.
-;; tests
-(logr "hello logr") ;; Announces that itself is available.
-(logr logr) ;; Show example of what a Lisp fcn (AKA Lambda) looks like.
+    (log (concat "lp: " (stgr rx))))) ;; Nicer to strigify the lisp expr first.
+
 </script>
 
 <!-- ====================================================== reverse ==== -->
@@ -248,12 +248,12 @@
 ;; ================================================== jp-text ====
 (defun jp-text (text x y)
     (let ()
-      (logr (concat "text( '" text "' , " px ", " py ")"))
-      (js "textSize(16)")
+      (js "textSize(12)")
+      (js "textAlign(CENTER,CENTER)")
       (js "strokeWeight(0)")
       (js "textStyle(NORMAL)")
       (js "fill('white')")
-      (js (concat "text(" text "," px "," py ")" )))
+      (js (concat "text(" text "," x "," y ")" )))
 )
 
 (defun jp-clear (x y)
@@ -474,6 +474,28 @@
 
 <script type="text/lisp">
 
+    ;; (F)unction used to extract value from object to compare
+    ;; (V)alue to be inserted in the list
+    ;; (L)ist
+    (defun insert (F V L)
+        (if (and L (< (F (head L)) (F V)) )   ;; Compare. Is F(first node) < V
+            ;; Yes, then the V must be inserted after n.
+            (cons (head L) (insert F V (tail L)) )
+            ;; No, append to front
+            (cons V L)
+        )
+    )
+
+    ;; (def M '((1 3) (1 7) (2 2) (4 3)) )
+    ;; (setq M (insert head '(4 1) M))
+    ;; (logr (list "Insert (4 1) " M ))
+
+    ;; This returns 't. So (7 (1 2)) = (7 (1 2)) according to lisp even though they are copies.
+    ;; Value comparison
+    ;;(logr (list "Equality " (cons 7 (cons (cons 1 (cons 2 nil)) nil)) " "
+        ;;(equal (cons 7 (cons (cons 1 (cons 2 nil)) nil)) (cons 7 (cons (cons 1 (cons 2 nil)) nil)) ) ))
+
+
     ;; These are the candidates for the robot to move to next.
     ;; If the robot finds a better move along a different route,
     ;; he will back up, traveling on the closed tiles to get to the parent tile
@@ -486,7 +508,7 @@
     (def closed '())
 
     ;; Best path / Current path
-    (def path `())
+    (def path '())
 
     (defun get-tile-type ( x y )
         (let* ((rows maze1-row-runs)
@@ -514,31 +536,29 @@
 
 
     (defun get-neighbors ()
-        (let* ((x (js "g_bot.x"))
-               (y (js "g_bot.y"))
-               (grid_w (js "g_grid.wid"))
-               (grid_h (js "g_grid.hgt"))
+        (let* ((x (js "g_bot.x")) (y (js "g_bot.y"))
+               (grid_w (js "g_grid.wid")) (grid_h (js "g_grid.hgt"))
                (neighbors '()))
 
-            (setq dx (- 1))
-            (while (<= dx 1)
+            ;; Check east
+            (if (and (>= (+ x 1) 0) (< (+ x 1) grid_w) (= (get-tile-type (+ x 1) y) 'floor))
+                (setq neighbors (cons (list (+ x 1) y) neighbors) )
+                nil)
 
-                (setq dy (- 1))
-                (while (<= dy 1)
+            ;; Check west
+            (if (and (>= (- x 1) 0) (< (- x 1) grid_w) (= (get-tile-type (- x 1) y) 'floor))
+                (setq neighbors (cons (list (- x 1) y) neighbors) )
+                nil)
 
-                    (if (and (>= (+ x dx) 0) (< (+ x dx) grid_w)            ;; 0 <= x < width
-                             (>= (+ y dy) 0) (< (+ y dy) grid_h)            ;; 0 <= y < height
-                             (not (and (= dx 0) (= dy 0)))                  ;; skip current location
-                             (not (and (!= dx 0) (!= dy 0)))
-                             (= (get-tile-type (+ x dx) (+ y dy)) 'floor))  ;; only get floor tiles
-                        (setq neighbors (cons (list (+ x dx) (+ y dy)) neighbors) )
-                        nil)
+            ;; Check north
+            (if (and (>= (+ y 1) 0) (< (+ y 1) grid_h) (= (get-tile-type x (+ y 1)) 'floor))
+                (setq neighbors (cons (list x (+ y 1)) neighbors) )
+                nil)
 
-                    (setq dy (+ dy 1))
-                )
-
-                (setq dx (+ dx 1))
-            )
+            ;; Check south
+            (if (and (>= (- y 1) 0) (< (- y 1) grid_h) (= (get-tile-type x (- y 1)) 'floor))
+                (setq neighbors (cons (list x (- y 1)) neighbors) )
+                nil)
 
             neighbors   ;; return neighbors
         )
@@ -566,66 +586,85 @@
     ;; H (n) = G (n) + F (n)
     (defun Hn (node) (+ (Fn node) (Gn node)))
 
-    (defun goto (x y)
+    (defun goto (n)
         (let* ((botx (js "g_bot.x"))
                (boty (js "g_bot.y"))
                (g_bot (js "g_bot"))
                (tile-type (get-tile-type botx boty)))
 
+            (logr (list "Move to " (car n) "," (cadr n)))
+
             ;; Move robot
-            (set g_bot "x" x)
-            (set g_bot "y" y)
+            (set g_bot "x" (car n))
+            (set g_bot "y" (cadr n))
 
             ;; Draw bot
             (jp-draw-bot)
 
-            ;; Re-draw previous cell
-            (cond ((eq tile-type 'floor)
-                    (js (concat "draw_sprite_in_cell(" 1 "," botx "," boty ")")))
-                  ((eq tile-type 'wall)
-                    (jp-clear botx boty)))
-
-            (logr (list "Closed " closed))
-            (logr (list "Found " (cons botx (cons boty nil))))
-            (if (member (cons botx (cons boty nil)) closed)
-                (let ((sz (js "g_grid.cell_size")))
-                    (js "fill(0,210,255,180)")
-                    (jp-rect (* botx sz) (* boty sz) sz sz)
-                )
-                nil
-            )
+            ;; Re-draw previous cell.
+            ;; (js (concat "draw_sprite_in_cell(" 1 "," botx "," boty ")"))
+            ;; (text-in-cell (Hn (cons botx (cons boty nil) ) ) botx boty)
         )
     )
 
     (defun move ()
         (let* ()
 
-            ;; 1. If open, move to open with lowest H(n)
             (logr (list "Open " open))
+
+            ;; 1. If open, move to open with lowest H(n)
             (if open
-                (let* ((x (abs (caadar open))) (y (abs (cdadar open))))
-                    (logr (concat "Move to " x "," y))
-                    (goto x y)
-                    (def open (cdr open))
-                    (def closed (append closed (cons (cons x (cons y nil)) nil) ))
+                (let ( (node (car open)) )
+
+                    ;; 1. If node is not a neighbor, it is not on the current best path.
+                    ;;    "Rewind" path until (find node neighbors) = 't
+                    ;;    This is the place in the path where the next best H is located
+                    ;;    since they are inserted in order. Choose this new path.
+                    ;; 2.
+
+
+
+                    (goto (cadr node))          ;; (H (x,y)) tail is coords.
+                    (def path (append path (cons node nil)))
+                    (def open (cdr open))       ;; remove node from open
+                    (def closed (append closed (cons node nil)))  ;; append node to closed
                 )
-                Nil
+                nil ;; (def open (list (list (Hn n) n)))
             )
+
+            (logr (list "Path " path))
+            (logr (list "Closed " closed))
 
             ;; 2. Get new neighbors, add to open, draw H(n) values in neighbors
             (setq neighbors (get-neighbors))
             (while neighbors
-                (let* ((n (car neighbors))
-                       (found (find tail n closed))
+                (let* ((n (head neighbors))
                        (H (Hn n)))
 
+                    (logr (list "Neighbor: " n ))
+
+                    ;; Draw tile sprite
+                    (js (concat "draw_sprite_in_cell(" 1 "," (car n) "," (cdr n) ")"))
+
+                    ;; Draw current best path color
+                    (if (find cadr n path)
+                        (let ((sz (js "g_grid.cell_size")))
+                            (logr (concat "Draw blue in cell " (car n) "," (cdr n)))
+                            (js "fill(0,210,255,180)")
+                            (jp-rect (* (car n) sz) (* (cdr n) sz) sz sz)
+                        )
+                        nil
+                    )
+
+                    ;; Draw number in cell
                     (text-in-cell H (car n) (cdr n))
 
-                    (if found
+
+                    (if (find cadr n closed)
                         ;; Found. Update Hn
-                        (logr (concat "Visited " found))
+                        (logr (concat "Already Visited " n))
                         ;; Not found. insert
-                        (def open (append open (cons (cons H (cons n nil)) nil) ))
+                        (def open (insert head (list H n) open ))
                     )
 
                 )
@@ -636,11 +675,15 @@
 
     )
 
+    ;; (def M '((1 3) (1 7) (2 2) (4 3)) )
+    ;; (setq M (insert head '(4 1) M))
+    ;; (logr (list "Insert (4 1) " M ))
+
     (defun text-in-cell (text x y)
         (let* ((sz (js "g_grid.cell_size"))
             (d (/ sz 2))
-            (px (+ (* sz x) 4))        ;; shift right 4 px
-            (py (+ (* sz y) 16 4)))    ;; shift down 4 px and 16 font size in pixels
+            (px (+ (* sz x) 14))        ;; shift right 4 px
+            (py (+ (* sz y) 14)))    ;; shift down 4 px and 16 font size in pixels
         (jp-text text px py)))
 
 
