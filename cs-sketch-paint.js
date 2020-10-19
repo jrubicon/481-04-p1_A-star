@@ -88,11 +88,11 @@ function setup( ) // P5 Setup Fcn
 }
 
 var g_bot = {
-    dir:3,
+    dir: 0,
     x:1, y:0,
     color:100,
     at({x, y}) { return this.x === x && this.y === y }
-}; // Dir is 0..7 clock, w 0 up.
+}; // Dir is 0..3 with 0 south, 1 east, 2 north, 3 west
 
 var g_goal = {
     x: 35, y: 26
@@ -105,7 +105,7 @@ var g_goal = {
 function get_sprite_by_id( rsprite_id ) // get sprite sheet x,y offsets obj.
 { // ID is a 0-based index; sprites are assumed to be grid cell size.
     // Sprite sheet is 2-elts 1-row, wall=0 and floor=1.
-    let id = rsprite_id % 3;
+    let id = rsprite_id % 6;
     let sprite_ob = { id: id, img: g_img_stuff };
     sprite_ob.sheet_pix_x = id * g_grid.cell_size;
     sprite_ob.sheet_pix_y = 0;

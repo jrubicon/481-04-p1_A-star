@@ -293,8 +293,10 @@
   (let* ((aaa (logr "Enter jp-draw-bot"))
          (sz (js "g_grid.cell_size"))
          (botx (js "g_bot.x"))
-         (boty (js "g_bot.y")))
-    (js (concat "draw_sprite_in_cell(" 2 "," botx "," boty ")")))
+         (boty (js "g_bot.y"))
+         (botdir (js "g_bot.dir")))
+    (logr (concat "draw_sprite_in_cell(" (+ 2 botdir) "," botx "," boty ")"))
+    (js (concat "draw_sprite_in_cell(" (+ 2 botdir) "," botx "," boty ")")))
 )
 
 
@@ -587,13 +589,23 @@
         (let* ((botx (js "g_bot.x"))
                (boty (js "g_bot.y"))
                (g_bot (js "g_bot"))
+               (x (car n)) (y (cadr n))
+               (dir 0)
                (tile-type (get-tile-type botx boty)))
 
-            (logr (list "Move to " (car n) "," (cadr n)))
+            (cond ((< 0 (- x botx)) (setq dir 3))
+                  ((> 0 (- x botx)) (setq dir 1))
+                  ((< 0 (- y boty)) (setq dir 0))
+                  ((> 0 (- y boty)) (setq dir 2)))
+
+           (logr (list "Move to " x "," y))
+           (logr (list "Dir " dir))
+
+            (set g_bot "dir" dir)
 
             ;; Move robot
-            (set g_bot "x" (car n))
-            (set g_bot "y" (cadr n))
+            (set g_bot "x" x)
+            (set g_bot "y" y)
 
             ;; Draw bot
             (jp-draw-bot)
