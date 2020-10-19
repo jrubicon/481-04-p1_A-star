@@ -246,15 +246,6 @@
   (js (concat "circle(" rx "," ry "," rdia ")" )))
 
 ;; ================================================== jp-text ====
-(defun jp-text (text x y)
-    (let ()
-      (js "textSize(12)")
-      (js "textAlign(CENTER,CENTER)")
-      (js "strokeWeight(0)")
-      (js "textStyle(NORMAL)")
-      (js "fill('white')")
-      (js (concat "text(" text "," x "," y ")" )))
-)
 
 (defun jp-clear (x y)
     (let* ((sz (js "g_grid.cell_size")))
@@ -340,29 +331,6 @@
     (logr "Ending while ix.")
     ))
 
-
-;; ================================================== Setup l4j.draw_fn ====
-;; Build & Setup l4j.draw_fn(): a JP lisp fn callable from JS.
-;; NB, a JS global var isn't same as a JP global var.
-;;  so we/JP must get hands on the JS var via a js() call.
-;;  and we
-(let* ((l4j (js "g_l4job"))
-       (fnx (lambda ( ) ;; Here's the JP lisp fn being built.
-              (let ()
-                  ;;(jp-draw-bot)
-                  ;;(jp-draw-goal))
-                  )
-                ))
-       (fny (lambda ( )
-              (jp-list-tile-cells))))
-  (set l4j "draw_fn" (export fnx)) ;; Here, we install the JP fn on a JS obj.
-  (logr (list "g_l4job.draw_fn is set"))
-  (logr (list "g_l4job.draw_fn() = " (js "g_l4job.draw_fn")))
-  (set l4j "list_fn" (export fny))
-  (logr (list "g_l4job.list_fn is set"))
-  (set l4j "set_f" (export fnz))
-  (logr (list "g_l4job.set_f is set"))
-)
 
 ;; ==================================================
 ;; =================== New Maze Drawing Code ========
@@ -517,39 +485,11 @@
     )
 
 
-
-
     (defun get-tile-type ( x y )
-        (let* ((rows maze1-row-runs)
-               (row nil))
-
-            (logr (list "Tile type at " x "," y))
-
-            (setq j 0)
-            (while (<= j y)
-                (setq row (car rows))
-                (setq rows (cdr rows))
-                (setq j (+ j 1)))
-
-            (setq type (car row))
-            (setq row (cdr row))
-
-            (setq i (car row))
-
-            (while (and (<= i x) (car row))
-                (setq type (if (= type 'floor) 'wall 'floor))
-                (setq row (cdr row))
-                (logr (list type row))
-                (setq i (+ i (car row))))
-
-
-            type
-        )
+        (let* ((sz (js "g_grid.cell_size"))
+            (rgb (jp-pix-rbg-sum (* x sz) (* y sz))))
+            (if (= rgb 0) 'wall 'floor))
     )
-
-    (setq k (+ 6 nil))
-    (logr (list "k = " k))
-
 
     (defun get-neighbors ()
         (let* ((x (js "g_bot.x")) (y (js "g_bot.y"))
@@ -557,29 +497,20 @@
                (neighbors '()))
 
             ;; Check east
-            (if (and (>= (+ x 1) 0) (< (+ x 1) grid_w) (= (get-tile-type (+ x 1) y) 'floor))
-                (setq neighbors (cons (list (+ x 1) y) neighbors) )
-                nil)
-
+            (if (= (get-tile-type (+ x 1) y) 'floor)
+                (setq neighbors (cons (list (+ x 1) y) neighbors) ))
 
             ;; Check west
-            (if (and (>= (- x 1) 0) (< (- x 1) grid_w) (= (get-tile-type (- x 1) y) 'floor))
-                (setq neighbors (cons (list (- x 1) y) neighbors) )
-                nil)
+            (if (= (get-tile-type (- x 1) y) 'floor)
+                (setq neighbors (cons (list (- x 1) y) neighbors) ))
 
             ;; Check north
-            (if (and (>= (+ y 1) 0) (< (+ y 1) grid_h) (= (get-tile-type x (+ y 1)) 'floor))
-                (setq neighbors (cons (list x (+ y 1)) neighbors) )
-                nil)
-
+            (if (= (get-tile-type x (+ y 1)) 'floor)
+                (setq neighbors (cons (list x (+ y 1)) neighbors) ))
 
             ;; Check south
-            (if (and (>= (- y 1) 0) (< (- y 1) grid_h) (= (get-tile-type x (- y 1)) 'floor))
-                (setq neighbors (cons (list x (- y 1)) neighbors) )
-                nil)
-
-            (logr (list "Neighbors 4" neighbors))
-
+            (if (= (get-tile-type x (- y 1)) 'floor)
+                (setq neighbors (cons (list x (- y 1)) neighbors) ))
 
             neighbors   ;; return neighbors
         )
@@ -590,20 +521,16 @@
                (boty (js "g_bot.y"))
                (g_bot (js "g_bot"))
                (x (car n)) (y (cadr n))
-               (dir 0)
-               (tile-type (get-tile-type botx boty)))
+               (dir 0))
 
-            (cond ((< 0 (- x botx)) (setq dir 3))
-                  ((> 0 (- x botx)) (setq dir 1))
-                  ((< 0 (- y boty)) (setq dir 0))
-                  ((> 0 (- y boty)) (setq dir 2)))
-
-           (logr (list "Move to " x "," y))
-           (logr (list "Dir " dir))
-
-            (set g_bot "dir" dir)
+            (setq  dir
+                (cond ((< 0 (- x botx)) 3)
+                      ((> 0 (- x botx)) 1)
+                      ((< 0 (- y boty)) 0)
+                      ((> 0 (- y boty)) 2)))
 
             ;; Move robot
+            (set g_bot "dir" dir)
             (set g_bot "x" x)
             (set g_bot "y" y)
 
@@ -613,26 +540,21 @@
     )
 
     (defun move ()
-        (let* ()
+        (let* ((neighbors (get-neighbors)))
 
-            (logr (list "Open " open))
+            ;;(logr (list "Open " open))
 
             (if open
                 (let ( (node (car open)) )
-
                     (goto node)
                     (def path (append path (cons node nil)))
                     (def open (cdr open))       ;; remove node from open
                     (def closed (append closed (cons node nil)))  ;; append node to closed
                 )
-                nil
             )
 
-            (logr (list "Path " path))
-            (logr (list "Closed " closed))
-
-            ;; Get-neighbors
-            (setq neighbors (get-neighbors))
+            ;;(logr (list "Path " path))
+            ;;(logr (list "Closed " closed))
 
             (logr (list "Neighbors " neigbors))
 
@@ -644,12 +566,8 @@
 
                     ;; Draw current best path color
                     (if (member n path)
-                        (let ((sz (js "g_grid.cell_size")))
-                            (logr (concat "Draw blue in cell " (car n) "," (cdr n)))
-                            (js "fill(0,210,255,180)")
-                            (jp-rect (* (car n) sz) (* (cdr n) sz) sz sz)
-                        )
-                        nil
+                        (js "fill('white')")        ;; kid cells get white text
+                        (js "fill(190,190,50)")      ;; mom cells get blue text
                     )
 
                     ;; Draw number in cell
@@ -668,15 +586,6 @@
                 )
                 (setq neighbors (cdr neighbors))
             )
-
-            (logr "End of move")
-            
-            ;; TARGET GOAL REACHED
-            (if (and (= (js "g_goal.x") (js "g_bot.x")) (= (js "g_goal.y") (js "g_bot.y")))
-              (let (setq goalreached true)
-                (logr (concat "GOAL REACHED! Tile Count: " (length path)))
-                (message (concat "GOAL REACHED! Tile Count: " (length path)))
-              ))
         )
 
     )
@@ -684,10 +593,14 @@
 
     (defun text-in-cell (text x y)
         (let* ((sz (js "g_grid.cell_size"))
-            (d (/ sz 2))
             (px (+ (* sz x) 14))        ;; shift right 4 px
-            (py (+ (* sz y) 14)))    ;; shift down 4 px and 16 font size in pixels
-        (jp-text text px py)))
+            (py (+ (* sz y) 14)))       ;; shift down 4 px and 16 font size in pixels
+            (js "textSize(12)")
+            (js "textAlign(CENTER,CENTER)")
+            (js "strokeWeight(0)")
+            (js (concat "text(" text "," px "," py ")" ))
+       )
+   )
 
 
     ;; Attach the move function to the robot object
