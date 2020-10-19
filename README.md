@@ -13,10 +13,10 @@ moves from a node, to the goal. Blue tiles are visited tiles and green circles a
 out indicating the best path to the destination tile/goal.
 
 #### Contents:
-- assets
--- draw-stuff.js
--- sprite-cells-a.png
--- styles.css
+- assets/
+  - draw-stuff.js
+  - sprite-cells-a.png
+  - styles.css
 - cs-sketch-paint.js
 - index-js-p5-jathp-5.html
 - Jathp.js
