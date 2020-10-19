@@ -25,6 +25,11 @@ var g_tiles;
 
 var g_l4job = { id:1 }; // Put Lisp stuff f JS-to-access in ob; id to force ob.
 
+
+function change_frame_rate(el) {
+    el.previousSibling.previousSibling.textContent = el.value;
+    g_frame_mod = el.value; // event.target.value;
+}
 function startbutton(){
   g_stop = ! g_stop;
 }
@@ -83,11 +88,11 @@ function setup( ) // P5 Setup Fcn
 }
 
 var g_bot = {
-    dir:3,
+    dir: 0,
     x:1, y:0,
     color:100,
     at({x, y}) { return this.x === x && this.y === y }
-}; // Dir is 0..7 clock, w 0 up.
+}; // Dir is 0..3 with 0 south, 1 east, 2 north, 3 west
 
 var g_goal = {
     x: 35, y: 26
@@ -100,7 +105,7 @@ var g_goal = {
 function get_sprite_by_id( rsprite_id ) // get sprite sheet x,y offsets obj.
 { // ID is a 0-based index; sprites are assumed to be grid cell size.
     // Sprite sheet is 2-elts 1-row, wall=0 and floor=1.
-    let id = rsprite_id % 3;
+    let id = rsprite_id % 6;
     let sprite_ob = { id: id, img: g_img_stuff };
     sprite_ob.sheet_pix_x = id * g_grid.cell_size;
     sprite_ob.sheet_pix_y = 0;
@@ -163,36 +168,13 @@ function move_bot_to_mouse( )
 
 function draw()  // P5 Frame Re-draw Fcn, Called for Every Frame.
 {
-
     ++g_frame_cnt;
     if (!g_stop && (0 === g_frame_cnt % g_frame_mod))
     {
-        // console.log( "p5 draw" );
-
-        // if (g_bot.at({x: g_goal.x, y: g_goal.y})) {
-        //
-        // }
-        // g_l4job.set_f("25", 6, 6)
-
-        if (!g_bot.at(4, 1)) {
+        if (!g_bot.at(g_goal)) {
             g_bot.move();
         }
-        // move_bot_to_mouse( );
-        // draw_update( );
     }
-    // OBE:
-    // Use JS Canvas's draw fcn, instead of P5's image(), to avoid CORS error.
-    // API: drawImage( image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight )
-    //  s = source (the image), d = dest (the canvase)
-    //
-    //  console.log( "beg: sprite test" );
-    //  let ctx = g_p5_cnv.canvas.getContext('2d');
-    //  ctx.drawImage( g_img_stuff, 0, 0, 28, 28, 120, 40, 28, 28 );
-    //  draw_sprite_in_cell( 0, 0, 0 );
-    //  console.log( "end: sprite test" );
-    //
-    // Works
-
 }
 
 function keyPressed( )
