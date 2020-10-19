@@ -670,7 +670,13 @@
             )
 
             (logr "End of move")
-
+            
+            ;; TARGET GOAL REACHED
+            (if (and (= (js "g_goal.x") (js "g_bot.x")) (= (js "g_goal.y") (js "g_bot.y")))
+              (let (setq goalreached true)
+                (logr (concat "GOAL REACHED! Tile Count: " (length path)))
+                (message (concat "GOAL REACHED! Tile Count: " (length path)))
+              ))
         )
 
     )
