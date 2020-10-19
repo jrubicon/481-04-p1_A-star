@@ -521,6 +521,8 @@
         (let* ((rows maze1-row-runs)
                (row nil))
 
+            (logr (list "Tile type at " x "," y))
+
             (setq j 0)
             (while (<= j y)
                 (setq row (car rows))
@@ -528,18 +530,23 @@
                 (setq j (+ j 1)))
 
             (setq type (car row))
-
             (setq row (cdr row))
 
             (setq i (car row))
-            (while (<= i x)
+
+            (while (and (<= i x) (car row))
                 (setq type (if (= type 'floor) 'wall 'floor))
                 (setq row (cdr row))
+                (logr (list type row))
                 (setq i (+ i (car row))))
+
 
             type
         )
     )
+
+    (setq k (+ 6 nil))
+    (logr (list "k = " k))
 
 
     (defun get-neighbors ()
@@ -552,6 +559,7 @@
                 (setq neighbors (cons (list (+ x 1) y) neighbors) )
                 nil)
 
+
             ;; Check west
             (if (and (>= (- x 1) 0) (< (- x 1) grid_w) (= (get-tile-type (- x 1) y) 'floor))
                 (setq neighbors (cons (list (- x 1) y) neighbors) )
@@ -562,10 +570,14 @@
                 (setq neighbors (cons (list x (+ y 1)) neighbors) )
                 nil)
 
+
             ;; Check south
             (if (and (>= (- y 1) 0) (< (- y 1) grid_h) (= (get-tile-type x (- y 1)) 'floor))
                 (setq neighbors (cons (list x (- y 1)) neighbors) )
                 nil)
+
+            (logr (list "Neighbors 4" neighbors))
+
 
             neighbors   ;; return neighbors
         )
@@ -596,12 +608,7 @@
             (if open
                 (let ( (node (car open)) )
 
-                    ;; If node is not a neighbor, it is not on the current best path.
-                    ;; "Rewind" path until (find node neighbors) = 't
-                    ;; This is the place in the path where the next best H is located
-                    ;; since they are inserted in order. Choose this new path.
-
-                    (goto node)          ;; (H (x,y)) tail is coords.
+                    (goto node)
                     (def path (append path (cons node nil)))
                     (def open (cdr open))       ;; remove node from open
                     (def closed (append closed (cons node nil)))  ;; append node to closed
@@ -614,6 +621,8 @@
 
             ;; Get-neighbors
             (setq neighbors (get-neighbors))
+
+            (logr (list "Neighbors " neigbors))
 
             (while neighbors
                 (let* ((n (head neighbors)))
@@ -647,6 +656,8 @@
                 )
                 (setq neighbors (cdr neighbors))
             )
+
+            (logr "End of move")
 
         )
 
