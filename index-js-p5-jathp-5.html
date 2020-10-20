@@ -86,13 +86,10 @@
           (map F (tail L)))))
 
 (defun find (F V L)
-    (if L
-        (if (equal (F (head L)) V)
-            (head L)
-          (find F V (tail L)))
-        nil
-    )
-)
+    (cond
+     ((null L) Nil)
+     ((equal V (F (first L))) L)
+     ('t (find F V (rest L)))))
 
 
 ; CADDRs
@@ -431,7 +428,7 @@
     ;; (N)node to be inserted in the list
     ;; (L)ist
     (defun insert (F N L)
-        (if (and L (< (F (head L)) (F N)) )
+        (if (and L (< (F (head L)) (F N) ))
             ;; Yes, then the V must be inserted after n.
             (cons (head L) (insert F N (tail L)) )
             ;; No, append to front
@@ -458,31 +455,20 @@
     ;; In other words, how far away is this node from where the robot started its best path.
     ;; Taxi-cab geometry is not Euclidean
     ;; Distance between gx,gy and x,y is just (gx - x) + (gy - y)
-    (defun Fn (node)
-        (+ (abs (length path)) 1)      ;; return the length of the current path + 1
-    )
+    (defun F-score (node)
+        (+ (abs (length path)) 1))      ;; return the length of the current path + 1
 
     ;; Distance from node to goal
     ;; Taxi-cab geometry is not Euclidean
     ;; Distance between gx,gy and x,y is just (gx - x) + (gy - y)
-    (defun Gn (node)
+    (defun G-score (node)
         (let* ((gx (js "g_goal.x")) (gy (js "g_goal.y"))
                 (x (abs (car node))) (y (abs (cdr node))))
-           (+ (- gx x) (- gy y))
-        )
-    )
+           (+ (- gx x) (- gy y))))
 
     ;; H (n) = G (n) + F (n)
-    (defun Hn (node) (+ (Fn node) (Gn node)))
+    (defun H-score (node) (+ (F-score node) (G-score node)))
 
-
-
-    ;; Add start position to open set and current path
-    (let* ( (x (js "g_bot.x")) (y (js "g_bot.y"))
-            (n (list x y)))
-        (def closed (list n) )
-        (def path (list n) )
-    )
 
 
     (defun get-tile-type ( x y )
@@ -516,18 +502,18 @@
         )
     )
 
-    (defun goto (n)
-        (let* ((botx (js "g_bot.x"))
-               (boty (js "g_bot.y"))
-               (g_bot (js "g_bot"))
-               (x (car n)) (y (cadr n))
-               (dir 0))
+    ;; ===============================
+    ;; node - a coordinate pair (x,y)
+    ;; ===============================
+    (defun goto (node)
+        (let ((g_bot (js "g_bot"))
+               (x (first node)) (y (second node)))
 
-            (setq  dir
-                (cond ((< 0 (- x botx)) 3)
-                      ((> 0 (- x botx)) 1)
-                      ((< 0 (- y boty)) 0)
-                      ((> 0 (- y boty)) 2)))
+            (setq dir
+                (cond ((< 0 (- x (get g_bot x))) 3)
+                      ((> 0 (- x (get g_bot x))) 1)
+                      ((< 0 (- y (get g_bot y))) 0)
+                      ((> 0 (- y (get g_bot y)) 2))))
 
             ;; Move robot
             (set g_bot "dir" dir)
@@ -539,46 +525,97 @@
         )
     )
 
+;; =========================================================
+;; NODE STRUCTURE:
+;;           <coords>    <parent>  <h-score>
+;; n = (    (  x  y  )  (  x  y  )     h     )
+;;          (car node)   (cadr n)   (caddr n)
+;; =========================================================
+
+;; =========================================================
+;; Helper extraction functions
+;; =========================================================
+
+    (defun coords (n) (car n))
+    (defun parent (n) (cadr n))
+    (defun H      (n) (caddr n))
+
+    ;; Use to access pairs in coordinates
+;;  (def first car)        get x-coord. Already defined at top
+    (def second cadr)   ;; get y-coord
+
+    (defun pos ()
+        (let ((g_bot (js "g_bot")))
+            (list (get g_bot x) (get g_bot y))))
+
+    (def n '( (1 2) (1 1) 17 ))
+
+    (logr (list "node" (coords n)))
+    (logr (list "parent" (parent n)))
+    (logr (list "H" (H n)))
+
+
     (defun move ()
         (let* ((neighbors (get-neighbors)))
 
-            ;;(logr (list "Open " open))
+           ;;(logr (list "Open " open))
 
-            (if open
-                (let ( (node (car open)) )
-                    (goto node)
-                    (def path (append path (cons node nil)))
-                    (def open (cdr open))       ;; remove node from open
-                    (def closed (append closed (cons node nil)))  ;; append node to closed
+           (logr (list "Current " (pos)))
+           (logr (list "Neighbors " neighbors))
+
+           (if open
+                (let ( (node (first open)))
+                   ;;(message (concat "Look for " (coords node)))
+                   (if (not (member (coords node) neighbors))
+                        (let ((rpath (reverse path)))
+                            (logr (list "Path " path))
+                            (logr (list "Go back to " (head rpath)))
+                            (goto (head rpath))
+                            (def path (reverse (rest rpath)))
+                        )
+                        (let ()
+                           (def path (append path (cons (coords node) nil)))
+                           (def closed (append closed (cons node nil)))
+                           (def open (rest open))
+                           (goto (coords node))
+                        )
+                   )
                 )
             )
 
-            ;;(logr (list "Path " path))
-            ;;(logr (list "Closed " closed))
-
-            (logr (list "Neighbors " neigbors))
+            (setq current (pos))
+            (setq neighbors (get-neighbors))
 
             (while neighbors
-                (let* ((n (head neighbors)))
+                (let* ((neighbor (head neighbors))
+                       (node (list neighbor current (H-score neighbor))))
+
+                    (logr (list "Neighbor " neighbor))
 
                     ;; Draw tile sprite
-                    (js (concat "draw_sprite_in_cell(" 1 "," (car n) "," (cdr n) ")"))
+                    (js (concat "draw_sprite_in_cell(" 1 "," (first neighbor) "," (second neighbor) ")"))
 
                     ;; Draw current best path color
-                    (if (member n path)
+                    (if (member neighbor path)
                         (js "fill('white')")        ;; kid cells get white text
-                        (js "fill(190,190,50)")      ;; mom cells get blue text
+                        (js "fill(190,190,50)")     ;; mom cells get blue text
                     )
 
                     ;; Draw number in cell
-                    (text-in-cell (Hn n) (car n) (cdr n))
+                    (text-in-cell (H node) (first neighbor) (second neighbor))
 
-                    (let ((already-visited (member n closed)))
-                        (if already-visited
+                    (logr (list "Mapped closed " (map coords closed)))
+                    (let ((known (or (member neighbor (map coords closed)) (member neighbor (map coords open))) ))
+                        (if known
                             ;; Found. Update Hn
-                            (logr (concat "Already Visited " n))
+                            (let ()
+                                (logr (list "Already known " known))
+                            )
                             ;; Not found. insert
-                            (def open (insert Hn n open ))
+                            (let ()
+                                (logr (list "Not yet known " known))
+                                (def open (insert H node open ))
+                            )
                         )
 
                     )
@@ -609,7 +646,7 @@
 
 
     ;; Keep this for later. Cool trick to map a function using a lambda
-    ;; (setq candidates (map (lambda (node) (list (Hn node) node) ) open ))
+    ;; (setq candidates (map (lambda (node) (list (H node) node) ) open ))
 
 </script>
 

@@ -173,6 +173,9 @@ function draw()  // P5 Frame Re-draw Fcn, Called for Every Frame.
     {
         if (!g_bot.at(g_goal)) {
             g_bot.move();
+        } else {
+            alert("You have reached the goal! ");
+            g_stop = true;
         }
     }
 }
