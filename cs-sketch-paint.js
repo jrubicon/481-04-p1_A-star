@@ -121,7 +121,7 @@ function grid_to_pix( rx, ry ) // Cvt grid cell x,y to canvas x,y wrapped.
 
 function draw_sprite_in_cell( rsprite_id, rx, ry ) // wraps in x,y ifn.
 {
-    console.log( "(p5 draw_sprite_in_cell ", rsprite_id, rx, ry, " )" );
+    //console.log( "(p5 draw_sprite_in_cell ", rsprite_id, rx, ry, " )" );
     let sprite_ob = get_sprite_by_id( rsprite_id );
     let pix_ob = grid_to_pix( rx, ry );
     let ctx = g_p5_cnv.canvas.getContext( '2d' ); // get html toolbox to draw.
@@ -130,7 +130,7 @@ function draw_sprite_in_cell( rsprite_id, rx, ry ) // wraps in x,y ifn.
                      g_grid.cell_size, g_grid.cell_size,
                    pix_ob.x, pix_ob.y,
                      g_grid.cell_size, g_grid.cell_size );
-    console.log( "end draw_sprite_in_cell)" );
+    //console.log( "end draw_sprite_in_cell)" );
 }
 // ==================================================
 // =================== END New Maze Drawing Code ========

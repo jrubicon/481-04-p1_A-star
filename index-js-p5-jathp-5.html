@@ -253,11 +253,11 @@
 
 ;; ================================================== jp-cell-rbg-sum ====
 (defun jp-pix-rbg-sum ( rx ry ) ;; rcx,rcy is upper-left cell corner pos.
-(let* ((za (logr (list "pix-rbg-sum: rx,ry = " rx ry)))
+(let* (  ;;(za (logr (list "pix-rbg-sum: rx,ry = " rx ry)))
          (px (+ 2 rx)) ;; Offset into cell.
          (py (+ 2 ry))
          (rbg-sum (js (concat "csjs_get_pixel_color_sum(" px "," py ")"))))
-    (logr (list "rx,ry,px,py,rbg-sum = " rx ry px py rbg-sum))
+    ;;(logr (list "rx,ry,px,py,rbg-sum = " rx ry px py rbg-sum))
     rbg-sum))
 
 ;; ================================================== jp-draw-bot ====
@@ -278,12 +278,12 @@
       (def red-tiles (cons rloc red-tiles)))))
 
 (defun jp-draw-bot ( )
-  (let* ((aaa (logr "Enter jp-draw-bot"))
+  (let* ( ;;(aaa (logr "Enter jp-draw-bot"))
          (sz (js "g_grid.cell_size"))
          (botx (js "g_bot.x"))
          (boty (js "g_bot.y"))
          (botdir (js "g_bot.dir")))
-    (logr (concat "draw_sprite_in_cell(" (+ 2 botdir) "," botx "," boty ")"))
+    ;; (logr (concat "draw_sprite_in_cell(" (+ 2 botdir) "," botx "," boty ")"))
     (js (concat "draw_sprite_in_cell(" (+ 2 botdir) "," botx "," boty ")")))
 )
 
@@ -436,19 +436,11 @@
         )
     )
 
-    ;; These are the candidates for the robot to move to next.
-    ;; If the robot finds a better move along a different route,
-    ;; he will back up, traveling on the closed tiles to get to the parent tile
-    ;; of the move that is better.
-    (def open '())
-
-    ;; These are the tiles that robot has already visited.
-    ;; Therefore, he can only travel on these tiles when exploring,
-    ;; except for the first move.
-    (def closed '())
-
-    ;; Best path / Current path
-    (def path '())
+    (defun find (F V L)
+        (cond
+         ((null L) Nil)
+         ((equal V (F (first L))) L)
+         ('t (find F V (rest L)))))
 
 
     ;; Distance from to this node along the current path.
@@ -507,13 +499,24 @@
     ;; ===============================
     (defun goto (node)
         (let ((g_bot (js "g_bot"))
-               (x (first node)) (y (second node)))
+              (sz (js "g_grid.cell_size"))
+              (x (first node)) (y (second node)))
 
             (setq dir
                 (cond ((< 0 (- x (get g_bot x))) 3)
                       ((> 0 (- x (get g_bot x))) 1)
                       ((< 0 (- y (get g_bot y))) 0)
                       ((> 0 (- y (get g_bot y)) 2))))
+
+            ;; Draw tile sprite
+            (js (concat "draw_sprite_in_cell(" 1 "," (get g_bot x) "," (get g_bot y) ")"))
+
+            (if (member (list (get g_bot x) (get g_bot y)) path)
+                (js "fill(50,170,220)")
+                (js "fill('green')"))
+
+            (jp-circle (+ (* sz (get g_bot x)) (/ sz 2)) (+ (* sz (get g_bot y)) (/ sz 2)) 10)
+
 
             ;; Move robot
             (set g_bot "dir" dir)
@@ -522,6 +525,7 @@
 
             ;; Draw bot
             (jp-draw-bot)
+
         )
     )
 
@@ -555,83 +559,84 @@
     (logr (list "H" (H n)))
 
 
-    (defun move ()
-        (let* ((neighbors (get-neighbors)))
+;; ========================
+;;  Open / Closed / BFS lists
+;; ========================
 
-           ;;(logr (list "Open " open))
+    ;; These are the candidates for the robot to move to next.
+    ;; If the robot finds a better move along a different route,
+    ;; he will back up, traveling on the closed tiles to get to the parent tile
+    ;; of the move that is better.
+    (def open '())
+
+    ;; These are the tiles that robot has already visited.
+    ;; Therefore, he can only travel on these tiles when exploring.
+    ;; Add start position
+    (def closed (cons (pos) nil))
+
+    ;; Best path / Current path
+    ;; Add start position
+    (def path (cons (pos) nil))
+
+
+    (defun move ()
+       (let* ()
 
            (logr (list "Current " (pos)))
-           (logr (list "Neighbors " neighbors))
+
+           (logr (list "Open " open))
+           (logr (list "Closed " closed))
 
            (if open
                 (let ( (node (first open)))
-                   ;;(message (concat "Look for " (coords node)))
-                   (if (not (member (coords node) neighbors))
-                        (let ((rpath (reverse path)))
-                            (logr (list "Path " path))
-                            (logr (list "Go back to " (head rpath)))
-                            (goto (head rpath))
-                            (def path (reverse (rest rpath)))
-                        )
-                        (let ()
-                           (def path (append path (cons (coords node) nil)))
+
+                   (if (member node (get-neighbors))
+                       (let ()
+                           (goto node)
+
+                           (def path (append path (cons node nil)))
                            (def closed (append closed (cons node nil)))
                            (def open (rest open))
-                           (goto (coords node))
-                        )
+                       )
+                       (let ()
+                            (goto (head (rest (member (pos) (reverse closed)))))
+                       )
                    )
                 )
-            )
+           )
 
-            (setq current (pos))
-            (setq neighbors (get-neighbors))
+           ;;(setq current (pos))
 
-            (while neighbors
-                (let* ((neighbor (head neighbors))
-                       (node (list neighbor current (H-score neighbor))))
+           (setq neighbors (get-neighbors))
 
-                    (logr (list "Neighbor " neighbor))
+           (logr (list "Neighbors " neighbors))
 
-                    ;; Draw tile sprite
-                    (js (concat "draw_sprite_in_cell(" 1 "," (first neighbor) "," (second neighbor) ")"))
-
-                    ;; Draw current best path color
-                    (if (member neighbor path)
-                        (js "fill('white')")        ;; kid cells get white text
-                        (js "fill(190,190,50)")     ;; mom cells get blue text
-                    )
-
-                    ;; Draw number in cell
-                    (text-in-cell (H node) (first neighbor) (second neighbor))
-
-                    (logr (list "Mapped closed " (map coords closed)))
-                    (let ((known (or (member neighbor (map coords closed)) (member neighbor (map coords open))) ))
-                        (if known
-                            ;; Found. Update Hn
-                            (let ()
-                                (logr (list "Already known " known))
-                            )
-                            ;; Not found. insert
-                            (let ()
-                                (logr (list "Not yet known " known))
-                                (def open (insert H node open ))
-                            )
+           (while neighbors
+                (let* ((neighbor (head neighbors)))
+                    (if (not (or (member neighbor closed) (member neighbor open)) )
+                        (let ()
+                            ;; Draw number in cell if "kid" cell
+                            (text-in-cell (H-score neighbor) (first neighbor) (second neighbor))
+                            ;; Insert in order of H-score
+                            (def open (insert H-score neighbor open ))
                         )
-
                     )
-
                 )
                 (setq neighbors (cdr neighbors))
-            )
-        )
+           )
 
+           ((method console "log") "================================================================================================================")
+       )
     )
+
+
 
 
     (defun text-in-cell (text x y)
         (let* ((sz (js "g_grid.cell_size"))
             (px (+ (* sz x) 14))        ;; shift right 4 px
             (py (+ (* sz y) 14)))       ;; shift down 4 px and 16 font size in pixels
+            (js "fill('white')")
             (js "textSize(12)")
             (js "textAlign(CENTER,CENTER)")
             (js "strokeWeight(0)")
